@@ -1,29 +1,64 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import CustomDrawer from "@/app/components/customDrawer";
+import HamburgerButton from "@/app/components/hamburger";
+import { Drawer } from "expo-router/drawer";
+import React, { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Provider } from "react-redux";
+import { store } from "../app/store/store";
+import { useAppDispatch } from "./hooks/hooks";
+import { getCurrentUserSession } from "./lib/session";
+import { loginSuccess } from "./slices/user-slice";
+import AvatarHeader from "./components/avatarHeader";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
-
+const RootLayout = () => {
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <Provider store={store}>
+          <Layout />
+        </Provider>
+      </GestureHandlerRootView>
+    </>
   );
-}
+};
+
+const Layout = () => {
+  const disPatch = useAppDispatch();
+  useEffect(() => {
+    getCurrentUserSession()
+      .then(({ id, avatarUrl }) => {
+        disPatch(loginSuccess({ id, avatarUrl }));
+      })
+      .catch(() => {
+        console.log("No Active Session");
+      });
+  }, []);
+  return (
+    <>
+      <Drawer
+        drawerContent={CustomDrawer}
+        screenOptions={{
+          headerLeft: () => <HamburgerButton />,
+          headerTitle: "",
+          drawerType: "slide",
+          headerRight:()=><AvatarHeader />
+        }}
+      >
+        <Drawer.Screen
+          name="tabs"
+          options={{
+            title: "Main",
+          }}
+        />
+        <Drawer.Screen
+          name="modals"
+          options={{
+            title: "Main",
+          }}
+        />
+      </Drawer>
+    </>
+  );
+};
+
+export default RootLayout;
