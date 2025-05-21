@@ -4,6 +4,7 @@ interface UserState {
   isAuthenticated: boolean;
   user: {
     id: string;
+    name: string;
     avatarUrl: string | null;  
   };
 }
@@ -12,6 +13,7 @@ const initialState: UserState = {
   isAuthenticated: false,
   user: { 
     id: "0",
+    name:"",
     avatarUrl: null,
   },
 };
@@ -22,7 +24,7 @@ const userSlice = createSlice({
   reducers: {
     loginSuccess: (
       state,
-      action: PayloadAction<{ id: string; avatarUrl: string | null }>
+      action: PayloadAction<{ id: string; name:string; avatarUrl: string | null }>
     ) => {
       state.isAuthenticated = true;
       state.user = action.payload;  
