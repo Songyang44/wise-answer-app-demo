@@ -3,14 +3,16 @@ import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 interface UploadState{
     fileUrl:string | null,
     uploading:boolean,
-    error:string|null
+    error:string|null,
+    fileName:string | null
 
 };
 
 const initialState : UploadState={
     fileUrl:null,
     uploading:false,
-    error:null
+    error:null,
+    fileName:null
 };
 
 const uploadSlice=createSlice({
@@ -32,8 +34,11 @@ const uploadSlice=createSlice({
             state.uploading = false;
             state.error = action.payload;
 
-        }
+        },
+        SetFileName(state, action: PayloadAction<string>) {
+            state.fileName = action.payload;
+          },
     }
 });
-export const {StartUpload,UploadSuccess,UploadFailure}=uploadSlice.actions;
+export const {StartUpload,UploadSuccess,UploadFailure,SetFileName}=uploadSlice.actions;
 export default uploadSlice.reducer;

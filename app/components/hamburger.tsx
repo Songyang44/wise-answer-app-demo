@@ -12,9 +12,9 @@ const HamburgerButton = () => {
   const isDrawerIsOpen = useDrawerStatus() === "open";
 
   const navigation = useNavigation<DrawerNavigationProp<{}>>();
-  useEffect(() => {
-    console.log("Drawer open status changed:", isDrawerIsOpen);
-  }, [isDrawerIsOpen]);
+  // useEffect(() => {
+  //   console.log("Drawer open status changed:", isDrawerIsOpen);
+  // }, [isDrawerIsOpen]);
 
   return (
     <>
