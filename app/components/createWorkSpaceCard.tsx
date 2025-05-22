@@ -1,12 +1,15 @@
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Entypo from "@expo/vector-icons/Entypo";
 import { useNavigation } from "@react-navigation/native";
+import axios from "axios";
 import * as DocumentPicker from "expo-document-picker";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
   BackHandler,
+  FlatList,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -21,6 +24,7 @@ import {
   UploadFailure,
   UploadSuccess,
 } from "../slices/create-slice";
+import { addQuestion, updateQuestion,setQuestions } from "../slices/interview-question-slice";
 import { uploadToS3 } from "../slices/uploadToS3";
 import { ResetForm, SetField } from "../slices/workspace-slice";
 
@@ -33,6 +37,10 @@ export default function CreateWorkSpaceCard() {
     { label: "Intermediate", value: "intermediate" },
     { label: "Senior", value: "senior" },
   ]);
+  const [showQuestions, setShowQuestions] = useState(false);
+  const questions = useAppSelector((state) => state.interviewquestion);
+  const [submitting, setSubmitting] = useState(false);
+
   const dispatch = useAppDispatch();
   const { uploading, fileUrl, error, fileName } = useAppSelector(
     (state: any) => state.create
@@ -69,6 +77,28 @@ export default function CreateWorkSpaceCard() {
     }
   };
 
+  const handleSubmit = async () => {
+    setSubmitting(true);
+  
+    try {
+      const response = await axios.post("https://BACKEND_API_URL/generateQuestions", {
+        salary,
+        jobDescription,
+        companyDescription,
+        level: value,
+        fileUrl,
+      });
+  
+      const aiQuestions = response.data.questions || []; 
+      dispatch(setQuestions(aiQuestions));
+      setShowQuestions(true);
+    } catch (error) {
+      Alert.alert("Error", "Failed to generate questions.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const navigation = useNavigation();
 
   useFocusEffect(
@@ -86,6 +116,7 @@ export default function CreateWorkSpaceCard() {
             onPress: () => {
               dispatch(ResetForm());
               navigation.goBack();
+              setShowQuestions(false);
             },
           },
         ]);
@@ -103,89 +134,113 @@ export default function CreateWorkSpaceCard() {
 
   return (
     <>
-      <View style={styles.card}>
-        <Text style={styles.title}>Your offers are coming!</Text>
-        <TextInput
-          placeholder="Salary"
-          style={styles.input}
-          value={salary}
-          onChangeText={(text) =>
-            dispatch(SetField({ key: "salary", value: text }))
-          }
-        />
-
-        <TextInput
-          placeholder="Company Description"
-          style={styles.input}
-          value={companyDescription}
-          onChangeText={(text) =>
-            dispatch(SetField({ key: "companyDescription", value: text }))
-          }
-        />
-        <TextInput
-          placeholder="Job Description"
-          style={styles.input}
-          value={jobDescription}
-          onChangeText={(text) =>
-            dispatch(SetField({ key: "jobDescription", value: text }))
-          }
-        />
-        <DropDownPicker
-          open={open}
-          value={value}
-          items={items}
-          setOpen={setOpen}
-          setValue={setValue}
-          setItems={setItems}
-          placeholder="Job Level"
-          placeholderStyle={{ color: "rgb(0, 0, 0)" }}
-          dropDownContainerStyle={{ backgroundColor: "rgb(255, 255, 255)" }}
-          style={styles.dropdown}
-          textStyle={{ color: "rgba(0, 0, 0, 0.77)" }}
-          ArrowDownIconComponent={() => (
-            <Entypo name="chevron-down" size={24} color="black" />
-          )}
-          ArrowUpIconComponent={() => (
-            <Entypo name="chevron-up" size={24} color="black" />
-          )}
-        />
-
-        <TouchableOpacity
-          style={styles.uploadButton}
-          onPress={handlePickDocument}
-        >
-          <AntDesign
-            name="clouduploado"
-            size={20}
-            color="white"
-            style={{ marginRight: 8 }}
+      <ScrollView>
+        <View style={styles.card}>
+          <Text style={styles.title}>Your offers are coming!</Text>
+          <TextInput
+            placeholder="Salary"
+            style={styles.input}
+            value={salary}
+            onChangeText={(text) =>
+              dispatch(SetField({ key: "salary", value: text }))
+            }
           />
-          <Text style={styles.uploadText}>
-            {fileName ? fileName : "Upload Your Resume"}
-          </Text>
-          {fileName && !uploading && !fileUrl && !error && (
-            <Text style={{ color: "black", marginTop: 10 }}>
-              Uploaded File: {fileName}
-            </Text>
-          )}
 
-          {uploading ? (
-            <Text style={{ color: "orange", marginTop: 6 }}>Uploading</Text>
-          ) : error ? (
-            <Text style={{ color: "red", marginTop: 6 }}>😢: {error}</Text>
-          ) : fileUrl ? (
-            <Text style={{ color: "green", marginTop: 6 }}> 🤗</Text>
-          ) : null}
-        </TouchableOpacity>
-      </View>
-      <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Text>Draft</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Text>Submit</Text>
-        </TouchableOpacity>
-      </View>
+          <TextInput
+            placeholder="Company Description"
+            style={styles.input}
+            value={companyDescription}
+            onChangeText={(text) =>
+              dispatch(SetField({ key: "companyDescription", value: text }))
+            }
+          />
+          <TextInput
+            placeholder="Job Description"
+            style={styles.input}
+            value={jobDescription}
+            onChangeText={(text) =>
+              dispatch(SetField({ key: "jobDescription", value: text }))
+            }
+          />
+          <DropDownPicker
+            open={open}
+            value={value}
+            items={items}
+            setOpen={setOpen}
+            setValue={setValue}
+            setItems={setItems}
+            placeholder="Job Level"
+            placeholderStyle={{ color: "rgb(0, 0, 0)" }}
+            dropDownContainerStyle={{ backgroundColor: "rgb(255, 255, 255)" }}
+            style={styles.dropdown}
+            textStyle={{ color: "rgba(0, 0, 0, 0.77)" }}
+            ArrowDownIconComponent={() => (
+              <Entypo name="chevron-down" size={24} color="black" />
+            )}
+            ArrowUpIconComponent={() => (
+              <Entypo name="chevron-up" size={24} color="black" />
+            )}
+          />
+
+          <TouchableOpacity
+            style={styles.uploadButton}
+            onPress={handlePickDocument}
+          >
+            <AntDesign
+              name="clouduploado"
+              size={20}
+              color="white"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.uploadText}>
+              {fileName ? fileName : "Upload Your Resume"}
+            </Text>
+            {fileName && !uploading && !fileUrl && !error && (
+              <Text style={{ color: "black", marginTop: 10 }}>
+                Uploaded File: {fileName}
+              </Text>
+            )}
+
+            {uploading ? (
+              <Text style={{ color: "orange", marginTop: 6 }}>Uploading</Text>
+            ) : error ? (
+              <Text style={{ color: "red", marginTop: 6 }}>😢: {error}</Text>
+            ) : fileUrl ? (
+              <Text style={{ color: "green", marginTop: 6 }}> 🤗</Text>
+            ) : null}
+          </TouchableOpacity>
+        </View>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={styles.actionButton}>
+            <Text>Draft</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => {
+              setShowQuestions(true);
+              handleSubmit();
+              // TODO: call API endpoint
+            }}
+          >
+            <Text>Submit</Text>
+          </TouchableOpacity>
+        </View>
+        {showQuestions && (
+          <View style={styles.questionContainer}>
+            <Text style={styles.questionTitle}>Interview Questions</Text>
+            <FlatList
+              data={questions.questions}
+              nestedScrollEnabled
+              keyExtractor={(item) => item.id}
+              renderItem={({ item, index }) => (
+                <Text style={styles.questionText}>
+                  {index + 1}. {item.text}
+                </Text>
+              )}
+            />
+          </View>
+        )}
+      </ScrollView>
     </>
   );
 }
@@ -223,6 +278,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
     borderColor: "rgba(0,0,0,0)",
+    zIndex:9999
   },
   uploadButton: {
     flexDirection: "row",
@@ -257,5 +313,27 @@ const styles = StyleSheet.create({
     elevation: 3,
     width: 120,
     alignItems: "center",
+  },
+  questionContainer: {
+    marginTop: 30,
+    marginHorizontal: 20,
+    padding: 20,
+    backgroundColor: "white",
+    borderRadius: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  questionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    color: "black",
+  },
+  questionText: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 6,
   },
 });
